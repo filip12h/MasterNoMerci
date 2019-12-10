@@ -1,95 +1,60 @@
 import java.util.ArrayList;
 import java.util.Collections;
 
+/*
+    táto trieda udržuje informácie o danom hráčovi - žetóny, karty, meno, body, poradie
+ */
+
 class Player {
 
     private int chips;
-    private boolean[] cardsBool;
     private ArrayList<Integer> cardsList;
     private String name;
     private int points;
-    private Player nextPlayer;
     private int id;
-
-    Player(int chips, ArrayList<Integer> cardsList){
-        this.chips = chips;
-        this.cardsList = cardsList;
-    }
-
+    //hlavný konštruktor hráča používaný pri vytváraní reálnej hry
     Player(String name, int id){
         this.name = name;
-        cardsBool = new boolean[37];
-        for (boolean k : cardsBool) {k = false;}
         cardsList = new ArrayList<>();
-        points = 5;
-        chips = 5; //TODO change to 11 for original game
+        points = 11;
+        chips = 11; //TODO change to 11 for original game
         this.id = id;
     }
-
+    //id hráča slúži určuje poradie. Na to aby sme zistili ktorý hráč nasleduje po tomto hráčovi, id zväčšíme o 1
     int getId(){return id;}
-
-    void setNextPlayer(Player player){ nextPlayer = player; }
-
-    Player getNextPlayer(){ return nextPlayer; }
-
-    int howManyPoints(ArrayList<Integer> cards, int chips){
-        int counter = 0;
-        int previous = 0;
-        Collections.sort(cards);
-        for (Integer i: cards){
-            if (i!=previous+1){
-                counter += i;
-                previous = i;
-            }
-        }
-        return chips - counter;
-    }
-
+    //táto metóda je zavolaná po tom ako hráč zoberie kartu
+    //ak sa v zozname hráčových kariet nenachádza karta o 1 menšia, skóre sa zmenší o hodnotu novej karty
+    //ak sa v zozname hráčových kariet nachádza karta o 1 väčšia, skóre sa zväčší o hodnotu novej karty + 1
     private void updatesPoints(int newCard){
-        if (!cardsBool[newCard-1])
+        if (!cardsList.contains(newCard-1))
             points -= newCard;
-        if (cardsBool[newCard+1])
+        if (cardsList.contains(newCard+1))
             points += newCard+1;
     }
-
-    //players turn is true if he took card. If he didnt, it is false
-    int playersTurn(boolean tookCard, int card, int chips) {
-        //playChip - 'no, merci'
-        if (!tookCard) {
-            if (this.chips > 0)
-                this.chips--;
-            points--;
-            return this.chips;
-        } else {
-            cardsBool[card] = true;
-            this.chips += chips;
-            updatesPoints(card);
-            cardsList.add(card);
-            points += chips;
-            return -1;
-        }
+    //hráč zoberie kartu -> pridá si žetóny, kartu do svojho zoznamu a aktualizuje body o žetóny zo stredu a pomocou funkcie updatesPoints
+    void takeCard(int card, int chips){
+        this.chips += chips;
+        cardsList.add(card);
+        updatesPoints(card);
+        points += chips;
     }
-
-    void gainChips(int n){
-        chips += n;
+    //keď hráč nezoberie kartu, jeho počet žetónov aj skóre sa zmenší o 1
+    void notTake(){
+        chips--;
+        points--;
     }
-
+    //vráti skóre hráča
     int getPoints() {
         return points;
     }
-
+    //vráti počet žetónov hráča
     int getChips() {
         return chips;
     }
-
+    //vráti hráčove karty
     ArrayList<Integer> getCards() { return cardsList; }
-
-    void takeCard(int card){ cardsList.add(card);}
-
+    //vráti hráčove meno - pre potreby pekného výpisu
     String getName() {
         return name;
     }
-    void removeLastCard(){ cardsList.remove(cardsList.size()-1);}
-
-
 }
