@@ -1,9 +1,7 @@
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 abstract class Strategy{
+
     double whatPlace(int player, int[] points) {
         /*v pripade ze hrac skonci na tom istom mieste nahladiac na to ci kartu zoberie, bude ho zaujimat konecne skore
         * cim ma vacsi naskok pred inymi, tym viac od vysledku odpocitame, no ak bude hrac zaostavat tak k vysledku pridame*/
@@ -40,11 +38,10 @@ abstract class Strategy{
         points[2] = howManyPoints(c2, ch2);
         return points;
     }
-    abstract int[] whatMove(int currentPlayer, int round, ArrayList<Integer> cards0, ArrayList<Integer> cards1, ArrayList<Integer> cards2, int chips0, int chips1, int chips2, int chips, int depth);
-    abstract boolean decide(int currentPlayer, int round, ArrayList<Integer> cards0, ArrayList<Integer> cards1, ArrayList<Integer> cards2, int chips0, int chips1, int chips2, int chips);
+    abstract int[] whatMove(int currentPlayer, int round, ArrayList<Integer> cards0, ArrayList<Integer> cards1, ArrayList<Integer> cards2, int chips0, int chips1, int chips2, int chips, int depth, String peviousTurns);
+    abstract boolean decide(int currentPlayer, int round, ArrayList<Integer> cards0, ArrayList<Integer> cards1, ArrayList<Integer> cards2, int chips0, int chips1, int chips2, int chips, String previousTurns);
 }
-/*uplne prehladavanie. Pouzitelne max. 6-7 kol dopredu.
-* */
+
 class RoughStrategy extends Strategy {
     private ArrayList<Integer> cards;
     private int numberOfRounds;
@@ -55,44 +52,44 @@ class RoughStrategy extends Strategy {
     }
 
     public boolean decide(int currentPlayer, int round, ArrayList<Integer> cards0, ArrayList<Integer> cards1,
-                            ArrayList<Integer> cards2, int chips0, int chips1, int chips2, int chips){
+                          ArrayList<Integer> cards2, int chips0, int chips1, int chips2, int chips, String str){
         int[] pTookCard;
         int[] pNotTook;
         if (currentPlayer==0){
             pTookCard = whatMove(currentPlayer, round + 1, addCardToList(cards0, cards.get(round)),
-                    cards1, cards2, chips0 + chips, chips1, chips2, 0, 0);
+                    cards1, cards2, chips0 + chips, chips1, chips2, 0, 0, "");
             pNotTook = whatMove((currentPlayer + 1) % 3, round, cards0, cards1, cards2,
-                    chips0 - 1, chips1, chips2, chips + 1, 0);
+                    chips0 - 1, chips1, chips2, chips + 1, 0, "");
             return whatPlace(0, pTookCard)<=whatPlace(0, pNotTook);
         } else if(currentPlayer==1){
             pTookCard = whatMove(currentPlayer, round + 1, cards0, addCardToList(cards1, cards.get(round)),
-                    cards2, chips0, chips1 + chips, chips2, 0, 0);
+                    cards2, chips0, chips1 + chips, chips2, 0, 0, "");
             pNotTook = whatMove((currentPlayer + 1) % 3, round, cards0, cards1, cards2, chips0,
-                    chips1 - 1, chips2, chips + 1, 0);
-            return whatPlace(1, pTookCard)<=whatPlace(0, pNotTook);
+                    chips1 - 1, chips2, chips + 1, 0, "");
+            return whatPlace(1, pTookCard)<=whatPlace(1, pNotTook);
         } else {
             pTookCard = whatMove(currentPlayer, round + 1, cards0, cards1,
-                    addCardToList(cards2, cards.get(round)), chips0, chips1, chips2 + chips, 0, 0);
+                    addCardToList(cards2, cards.get(round)), chips0, chips1, chips2 + chips, 0, 0, "");
             pNotTook = whatMove((currentPlayer + 1) % 3, round, cards0, cards1, cards2,
-                    chips0, chips1, chips2 - 1, chips + 1, 0);
-            return whatPlace(2, pTookCard)<=whatPlace(0, pNotTook);
+                    chips0, chips1, chips2 - 1, chips + 1, 0, "");
+            return whatPlace(2, pTookCard)<=whatPlace(2, pNotTook);
         }
     }
     //prechádza hráčove karty od najmenšej karty po najväčšiu - ak nie je prezeraná karta o 1 väčšia ako previous, zväčší counter o i, prezeranú kartu si následne uložíme do previous
     //vrátime hodnotu chips - counter
     public int[] whatMove(int currentPlayer, int round, ArrayList<Integer> cards0, ArrayList<Integer> cards1,
-                          ArrayList<Integer> cards2, int chips0, int chips1, int chips2, int chips, int depth) {
+                          ArrayList<Integer> cards2, int chips0, int chips1, int chips2, int chips, int depth, String str) {
         switch (currentPlayer) {
             case 0: {
                 if (round == numberOfRounds) {
                     return currentPoints(cards0, cards1, cards2, chips0, chips1, chips2);
                 }
                 int[] tookCard = whatMove(currentPlayer, round + 1, addCardToList(cards0, cards.get(round)),
-                        cards1, cards2, chips0 + chips, chips1, chips2, 0, 0);
+                        cards1, cards2, chips0 + chips, chips1, chips2, 0, 0, "");
                 if (chips >= cards.get(round) || chips0 == 0)
                     return tookCard;
                 int[] notTook = whatMove((currentPlayer + 1) % 3, round, cards0, cards1, cards2,
-                        chips0 - 1, chips1, chips2, chips + 1, 0);
+                        chips0 - 1, chips1, chips2, chips + 1, 0, "");
                 if ((whatPlace(0, tookCard) < whatPlace(0, notTook))||(whatPlace(0, tookCard)==1))
                     return tookCard;
                 else return notTook;
@@ -102,11 +99,11 @@ class RoughStrategy extends Strategy {
                     return currentPoints(cards0, cards1, cards2, chips0, chips1, chips2);
                 }
                 int[] tookCard = whatMove(currentPlayer, round + 1, cards0, addCardToList(cards1, cards.get(round)),
-                        cards2, chips0, chips1 + chips, chips2, 0, 0);
+                        cards2, chips0, chips1 + chips, chips2, 0, 0, "");
                 if (chips >= cards.get(round) || chips1 == 0)
                     return tookCard;
                 int[] notTook = whatMove((currentPlayer + 1) % 3, round, cards0, cards1, cards2, chips0,
-                        chips1 - 1, chips2, chips + 1, 0);
+                        chips1 - 1, chips2, chips + 1, 0, "");
                 if (whatPlace(1, tookCard) < whatPlace(1, notTook)||(whatPlace(1, tookCard)==1))
                     return tookCard;
                 else return notTook;
@@ -116,11 +113,11 @@ class RoughStrategy extends Strategy {
                     return currentPoints(cards0, cards1, cards2, chips0, chips1, chips2);
                 }
                 int[] tookCard = whatMove(currentPlayer, round + 1, cards0, cards1,
-                        addCardToList(cards2, cards.get(round)), chips0, chips1, chips2 + chips, 0, 0);
+                        addCardToList(cards2, cards.get(round)), chips0, chips1, chips2 + chips, 0, 0, "");
                 if (chips >= cards.get(round) || chips2 == 0)
                     return tookCard;
                 int[] notTook = whatMove((currentPlayer + 1) % 3, round, cards0, cards1, cards2,
-                        chips0, chips1, chips2 - 1, chips + 1, 0);
+                        chips0, chips1, chips2 - 1, chips + 1, 0, "");
                 if (whatPlace(2, tookCard) < whatPlace(2, notTook)||(whatPlace(2, tookCard)==1))
                     return tookCard;
                 else return notTook;
@@ -131,16 +128,146 @@ class RoughStrategy extends Strategy {
     }
 }
 
+/*uplne prehladavanie. Pouzitelne max. 6-7 kol dopredu.
+* */
+class RoughMemoStrategy extends Strategy {
+    private ArrayList<Integer> cards;
+    private int numberOfRounds;
+    private int memoDepthLimit;
+    //konštruktorom si inicializujeme poradie kariet prichádzajúcich do hry a počet kôl
+    RoughMemoStrategy(ArrayList<Integer> cards, int numberOfRounds, int memoDepthLimit) {
+        this.cards = cards;
+        this.numberOfRounds = numberOfRounds;
+        this.memoDepthLimit = memoDepthLimit;
+    }
+
+    // pre kazdy stav si budem pamatat ako hra skonci ked budem robit optimalne tahy
+
+    public boolean decide(int currentPlayer, int round, ArrayList<Integer> cards0, ArrayList<Integer> cards1,
+                            ArrayList<Integer> cards2, int chips0, int chips1, int chips2, int chips, String str){
+
+            int[] pTookCard;
+            int[] pNotTook;
+            if (currentPlayer == 0) {
+                pTookCard = whatMove(currentPlayer, round + 1, addCardToList(cards0, cards.get(round)),
+                        cards1, cards2, chips0 + chips, chips1, chips2, 0, 0, str+"1");
+                pNotTook = whatMove((currentPlayer + 1) % 3, round, cards0, cards1, cards2,
+                        chips0 - 1, chips1, chips2, chips + 1, 0, str+"0");
+                return whatPlace(0, pTookCard) <= whatPlace(0, pNotTook);
+            } else if (currentPlayer == 1) {
+                pTookCard = whatMove(currentPlayer, round + 1, cards0, addCardToList(cards1, cards.get(round)),
+                        cards2, chips0, chips1 + chips, chips2, 0, 0, str+"1");
+                pNotTook = whatMove((currentPlayer + 1) % 3, round, cards0, cards1, cards2, chips0,
+                        chips1 - 1, chips2, chips + 1, 0, str+"0");
+                return whatPlace(1, pTookCard) <= whatPlace(1, pNotTook);
+            } else {
+                pTookCard = whatMove(currentPlayer, round + 1, cards0, cards1,
+                        addCardToList(cards2, cards.get(round)), chips0, chips1, chips2 + chips, 0, 0, str+"1");
+                pNotTook = whatMove((currentPlayer + 1) % 3, round, cards0, cards1, cards2,
+                        chips0, chips1, chips2 - 1, chips + 1, 0, str+"0");
+                return whatPlace(2, pTookCard) <= whatPlace(2, pNotTook);
+            }
+
+    }
+    //prechádza hráčove karty od najmenšej karty po najväčšiu - ak nie je prezeraná karta o 1 väčšia ako previous, zväčší counter o i, prezeranú kartu si následne uložíme do previous
+    //vrátime hodnotu chips - counter
+    public int[] whatMove(int currentPlayer, int round, ArrayList<Integer> cards0, ArrayList<Integer> cards1,
+                          ArrayList<Integer> cards2, int chips0, int chips1, int chips2, int chips, int depth, String str) {
+        if (Game.memo.containsKey(str)){
+            return Game.memo.get(str);
+        }
+        //TODO something is wrong HERE
+        switch (currentPlayer) {
+            case 0: {
+                if (round == numberOfRounds) {
+                    if (depth<memoDepthLimit)
+                        Game.memo.put(str, currentPoints(cards0, cards1, cards2, chips0, chips1, chips2));
+                    return currentPoints(cards0, cards1, cards2, chips0, chips1, chips2);
+                }
+                int[] tookCard = whatMove(currentPlayer, round + 1, addCardToList(cards0, cards.get(round)),
+                        cards1, cards2, chips0 + chips, chips1, chips2, 0, depth+1, str+"1");
+                if (chips >= cards.get(round) || chips0 == 0) {
+                    if (depth<memoDepthLimit)
+                        Game.memo.put(str, tookCard);
+                    return tookCard;
+                }
+                int[] notTook = whatMove((currentPlayer + 1) % 3, round, cards0, cards1, cards2,
+                        chips0 - 1, chips1, chips2, chips + 1, depth+1, str+"0");
+                if ((whatPlace(0, tookCard) < whatPlace(0, notTook))||(whatPlace(0, tookCard)==1)) {
+                    if (depth<memoDepthLimit)
+                        Game.memo.put(str, tookCard);
+                    return tookCard;
+                }
+                if (depth<memoDepthLimit)
+                    Game.memo.put(str, notTook);
+                return notTook;
+            }
+            case 1: {
+                if (round == numberOfRounds) {
+                    if (depth<memoDepthLimit)
+                        Game.memo.put(str, currentPoints(cards0, cards1, cards2, chips0, chips1, chips2));
+                    return currentPoints(cards0, cards1, cards2, chips0, chips1, chips2);
+                }
+                int[] tookCard = whatMove(currentPlayer, round + 1, cards0, addCardToList(cards1, cards.get(round)),
+                        cards2, chips0, chips1 + chips, chips2, 0, depth+1, str+"1");
+                if (chips >= cards.get(round) || chips1 == 0) {
+                    if (depth<memoDepthLimit)
+                        Game.memo.put(str, tookCard);
+                    return tookCard;
+                }
+                int[] notTook = whatMove((currentPlayer + 1) % 3, round, cards0, cards1, cards2, chips0,
+                        chips1 - 1, chips2, chips + 1, depth+1, str+"0");
+                if (whatPlace(1, tookCard) < whatPlace(1, notTook)||(whatPlace(1, tookCard)==1)) {
+                    if (depth<memoDepthLimit)
+                        Game.memo.put(str, tookCard);
+                    return tookCard;
+                }
+                if (depth<memoDepthLimit)
+                    Game.memo.put(str, notTook);
+                return notTook;
+            }
+            case 2: {
+                if (round == numberOfRounds) {
+                    if (depth<memoDepthLimit)
+                        Game.memo.put(str, currentPoints(cards0, cards1, cards2, chips0, chips1, chips2));
+                    return currentPoints(cards0, cards1, cards2, chips0, chips1, chips2);
+                }
+                int[] tookCard = whatMove(currentPlayer, round + 1, cards0, cards1,
+                        addCardToList(cards2, cards.get(round)), chips0, chips1, chips2 + chips, 0, depth+1, str+"1");
+                if (chips >= cards.get(round) || chips2 == 0) {
+                    if (depth<memoDepthLimit)
+                        Game.memo.put(str, tookCard);
+                    return tookCard;
+                }
+                int[] notTook = whatMove((currentPlayer + 1) % 3, round, cards0, cards1, cards2,
+                        chips0, chips1, chips2 - 1, chips + 1, depth+1, str+"0");
+                if (whatPlace(2, tookCard) < whatPlace(2, notTook)||(whatPlace(2, tookCard)==1)) {
+                    if (depth<memoDepthLimit)
+                        Game.memo.put(str, tookCard);
+                    return tookCard;
+                }
+                if (depth<memoDepthLimit)
+                    Game.memo.put(str, notTook);
+                return notTook;
+            }
+        }
+        //tuto sa nikdy nedostaneme, ale syntax nepustí
+        if (depth<memoDepthLimit)
+            Game.memo.put(str, currentPoints(cards0, cards1, cards2, chips0, chips1, chips2));
+        return currentPoints(cards0, cards1, cards2, chips0, chips1, chips2);
+    }
+}
+
 /*absolutne najdebilnejsie riesenie - kartu zoberieme s 50% sancou nehladiac na jej hodnotu.
 * */
 class NoStrategy extends Strategy {
     NoStrategy(){}
     @Override
-    int[] whatMove(int currentPlayer, int round, ArrayList<Integer> cards0, ArrayList<Integer> cards1, ArrayList<Integer> cards2, int chips0, int chips1, int chips2, int chips, int depth) {
+    int[] whatMove(int currentPlayer, int round, ArrayList<Integer> cards0, ArrayList<Integer> cards1, ArrayList<Integer> cards2, int chips0, int chips1, int chips2, int chips, int depth, String str) {
         return new int[3];
     }
     @Override
-    boolean decide(int currentPlayer, int round, ArrayList<Integer> cards0, ArrayList<Integer> cards1, ArrayList<Integer> cards2, int chips0, int chips1, int chips2, int chips) {
+    boolean decide(int currentPlayer, int round, ArrayList<Integer> cards0, ArrayList<Integer> cards1, ArrayList<Integer> cards2, int chips0, int chips1, int chips2, int chips, String str) {
         return Math.random()>Math.random();
     }
 }
@@ -159,44 +286,44 @@ class BasicStrategy extends Strategy{
     }
 
     public boolean decide(int currentPlayer, int round, ArrayList<Integer> cards0, ArrayList<Integer> cards1,
-                          ArrayList<Integer> cards2, int chips0, int chips1, int chips2, int chips){
+                          ArrayList<Integer> cards2, int chips0, int chips1, int chips2, int chips, String str){
         int[] pTookCard;
         int[] pNotTook;
         if (currentPlayer==0){
             pTookCard = whatMove(currentPlayer, round + 1, addCardToList(cards0, cards.get(round)),
-                    cards1, cards2, chips0 + chips, chips1, chips2, 0, 0);
+                    cards1, cards2, chips0 + chips, chips1, chips2, 0, 0, "");
             pNotTook = whatMove((currentPlayer + 1) % 3, round, cards0, cards1, cards2,
-                    chips0 - 1, chips1, chips2, chips + 1, 0);
+                    chips0 - 1, chips1, chips2, chips + 1, 0, "");
             return whatPlace(0, pTookCard)<=whatPlace(0, pNotTook);
         } else if(currentPlayer==1){
             pTookCard = whatMove(currentPlayer, round + 1, cards0, addCardToList(cards1, cards.get(round)),
-                    cards2, chips0, chips1 + chips, chips2, 0, 0);
+                    cards2, chips0, chips1 + chips, chips2, 0, 0, "");
             pNotTook = whatMove((currentPlayer + 1) % 3, round, cards0, cards1, cards2, chips0,
-                    chips1 - 1, chips2, chips + 1, 0);
+                    chips1 - 1, chips2, chips + 1, 0, "");
             return whatPlace(1, pTookCard)<=whatPlace(1, pNotTook);
         } else {
             pTookCard = whatMove(currentPlayer, round + 1, cards0, cards1,
-                    addCardToList(cards2, cards.get(round)), chips0, chips1, chips2 + chips, 0, 0);
+                    addCardToList(cards2, cards.get(round)), chips0, chips1, chips2 + chips, 0, 0, "");
             pNotTook = whatMove((currentPlayer + 1) % 3, round, cards0, cards1, cards2,
-                    chips0, chips1, chips2 - 1, chips + 1, 0);
+                    chips0, chips1, chips2 - 1, chips + 1, 0, "");
             return whatPlace(2, pTookCard)<=whatPlace(2, pNotTook);
         }
     }
     //prechádza hráčove karty od najmenšej karty po najväčšiu - ak nie je prezeraná karta o 1 väčšia ako previous, zväčší counter o i, prezeranú kartu si následne uložíme do previous
     //vrátime hodnotu chips - counter
     public int[] whatMove(int currentPlayer, int round, ArrayList<Integer> cards0, ArrayList<Integer> cards1,
-                          ArrayList<Integer> cards2, int chips0, int chips1, int chips2, int chips, int depth) {
+                          ArrayList<Integer> cards2, int chips0, int chips1, int chips2, int chips, int depth, String str) {
         switch (currentPlayer) {
             case 0: {
                 if ((depth == maxdepth)||(round == numberOfRounds)) {
                     return currentPoints(cards0, cards1, cards2, chips0, chips1, chips2);
                 }
                 int[] tookCard = whatMove(currentPlayer, round + 1, addCardToList(cards0, cards.get(round)),
-                        cards1, cards2, chips0 + chips, chips1, chips2, 0, depth+1);
+                        cards1, cards2, chips0 + chips, chips1, chips2, 0, depth+1, "");
                 if (chips >= cards.get(round) || chips0 == 0)
                     return tookCard;
                 int[] notTook = whatMove((currentPlayer + 1) % 3, round, cards0, cards1, cards2,
-                        chips0 - 1, chips1, chips2, chips + 1, depth+1);
+                        chips0 - 1, chips1, chips2, chips + 1, depth+1, "");
                 if ((whatPlace(0, tookCard) < whatPlace(0, notTook))||(whatPlace(0, tookCard)==1))
                     return tookCard;
                 else return notTook;
@@ -206,11 +333,11 @@ class BasicStrategy extends Strategy{
                     return currentPoints(cards0, cards1, cards2, chips0, chips1, chips2);
                 }
                 int[] tookCard = whatMove(currentPlayer, round + 1, cards0, addCardToList(cards1, cards.get(round)),
-                        cards2, chips0, chips1 + chips, chips2, 0, depth+1);
+                        cards2, chips0, chips1 + chips, chips2, 0, depth+1, "");
                 if (chips >= cards.get(round) || chips1 == 0)
                     return tookCard;
                 int[] notTook = whatMove((currentPlayer + 1) % 3, round, cards0, cards1, cards2, chips0,
-                        chips1 - 1, chips2, chips + 1, depth+1);
+                        chips1 - 1, chips2, chips + 1, depth+1, "");
                 if (whatPlace(1, tookCard) < whatPlace(1, notTook)||(whatPlace(1, tookCard)==1))
                     return tookCard;
                 else return notTook;
@@ -220,11 +347,11 @@ class BasicStrategy extends Strategy{
                     return currentPoints(cards0, cards1, cards2, chips0, chips1, chips2);
                 }
                 int[] tookCard = whatMove(currentPlayer, round + 1, cards0, cards1,
-                        addCardToList(cards2, cards.get(round)), chips0, chips1, chips2 + chips, 0, depth+1);
+                        addCardToList(cards2, cards.get(round)), chips0, chips1, chips2 + chips, 0, depth+1, "");
                 if (chips >= cards.get(round) || chips2 == 0)
                     return tookCard;
                 int[] notTook = whatMove((currentPlayer + 1) % 3, round, cards0, cards1, cards2,
-                        chips0, chips1, chips2 - 1, chips + 1, depth+1);
+                        chips0, chips1, chips2 - 1, chips + 1, depth+1, "");
                 if (whatPlace(2, tookCard) < whatPlace(2, notTook)||(whatPlace(2, tookCard)==1))
                     return tookCard;
                 else return notTook;
@@ -249,13 +376,14 @@ class SequenceStrategy extends Strategy{
     }
 
     @Override
-    int[] whatMove(int currentPlayer, int round, ArrayList<Integer> cards0, ArrayList<Integer> cards1, ArrayList<Integer> cards2, int chips0, int chips1, int chips2, int chips, int depth) {
+    int[] whatMove(int currentPlayer, int round, ArrayList<Integer> cards0, ArrayList<Integer> cards1, ArrayList<Integer> cards2, int chips0, int chips1, int chips2, int chips, int depth, String str) {
         return new int[0];
     }
 
     @Override
-    boolean decide(int currentPlayer, int round, ArrayList<Integer> cards0, ArrayList<Integer> cards1, ArrayList<Integer> cards2, int chips0, int chips1, int chips2, int chips) {
+    boolean decide(int currentPlayer, int round, ArrayList<Integer> cards0, ArrayList<Integer> cards1, ArrayList<Integer> cards2, int chips0, int chips1, int chips2, int chips, String str) {
         ArrayList<Integer> possibleCards = new ArrayList<>();
+        // v possibleCards mame vsetky karty ktore hrac moze este teoreticky ziskat
         if (currentPlayer==0){
             possibleCards.addAll(cards0);
         } else if (currentPlayer==1){
@@ -266,16 +394,16 @@ class SequenceStrategy extends Strategy{
         for (int i = round; i < numberOfRounds; i++) {
             possibleCards.add(cards.get(i));
         }
-
+        // indexl a indexr su indexy zaciatku a konca postupnosti ktorou vie byt dana karta este sucastou
         int indexl = cards.get(round);
         while (possibleCards.contains(indexl))
             indexl--;
         int indexr = cards.get(round);
         while (possibleCards.contains(indexr))
             indexr++;
-        int n = indexr-indexl-1;
+        int n = indexr-indexl-1;    // dlzka tejto postupnosti
 
-        System.out.println(possibleCards+" "+cards.get(round)+" "+n);
+        // System.out.println(possibleCards+" "+cards.get(round)+" "+n);
         return chips>cards.get(round)/n;
         //mozno namiesto hodnoty karty by bolo lepsie davat hodnotu najmensej karty z postupnosti
     }
@@ -285,14 +413,14 @@ class SequenceStrategy extends Strategy{
 * */
 
 class NotARobot extends Strategy{
-
     @Override
-    int[] whatMove(int currentPlayer, int round, ArrayList<Integer> cards0, ArrayList<Integer> cards1, ArrayList<Integer> cards2, int chips0, int chips1, int chips2, int chips, int depth) {
+    int[] whatMove(int currentPlayer, int round, ArrayList<Integer> cards0, ArrayList<Integer> cards1, ArrayList<Integer> cards2, int chips0, int chips1, int chips2, int chips, int depth, String str) {
         return new int[0];
     }
 
     @Override
-    boolean decide(int currentPlayer, int round, ArrayList<Integer> cards0, ArrayList<Integer> cards1, ArrayList<Integer> cards2, int chips0, int chips1, int chips2, int chips) {
+    boolean decide(int currentPlayer, int round, ArrayList<Integer> cards0, ArrayList<Integer> cards1, ArrayList<Integer> cards2, int chips0, int chips1, int chips2, int chips, String str) {
         return false;
     }
+
 }

@@ -10,7 +10,20 @@ public class Main {
         int numberOfRounds = 24;
         int numOfCards = 33;
         int playersChips = 11;
-        Game game = new Game(numofPl, numberOfRounds,numOfCards,playersChips);
-        game.playGame();
+        int[][] hundredGames = new int[100][3];
+        int[] avg = new int[3];
+        long startTime = System.nanoTime();
+        for (int i = 0; i < 1; i++) {
+            Game game = new Game(numofPl, numberOfRounds, numOfCards, playersChips);
+            hundredGames[i] = game.playGame(10);
+            for (int j = 0; j < 3; j++) {
+                avg[j] += hundredGames[i][j];
+            }
+            //System.out.println(hundredGames[i][0] + "..." + hundredGames[i][1] + "..." + hundredGames[i][2]);
+            Game.memo.clear();
+        }
+        long endTime = System.nanoTime();
+        long timeElapsed = endTime - startTime;
+        System.out.println(timeElapsed / 1000000);
     }
 }

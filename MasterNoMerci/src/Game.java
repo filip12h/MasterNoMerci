@@ -5,7 +5,7 @@ import java.util.*;
     poradie kariet ako budú prichádzať do hry, zoznam hráčov a hráč na ťahu
  */
 //todo: memoizovať si výsledky zo stavov do hašovacej tabuľky
-class Game {
+public class Game {
     private ArrayList<Player> players;
     private ArrayList<Strategy> strategies;
     private ArrayList<Integer> cards;
@@ -40,8 +40,9 @@ class Game {
         vytvoríme FinalStrategy a vo while cykle prebieha hra pokým je round menšie ako numOfRounds
     */
 
+    public static HashMap<String, int[]> memo = new HashMap<>();
 
-    Game(int numOfPl, int numberOfRounds, int numOfCards, int playersChips) {
+    public Game(int numOfPl, int numberOfRounds, int numOfCards, int playersChips) {
         chips = 0;
         players = new ArrayList<>();
         this.numberOfRounds = numberOfRounds;
@@ -53,14 +54,49 @@ class Game {
 
 
         cards = new ArrayList<>();
+/*
+        cards.add(14);
+        cards.add(18);
+        cards.add(24);
+        cards.add(34);
+        cards.add(25);
+        cards.add(5);
+        cards.add(9);
+        cards.add(11);
+        cards.add(33);
+        cards.add(35);
+        cards.add(31);
+        cards.add(32);
+        cards.add(7);
+        cards.add(21);
+        cards.add(13);
+        cards.add(22);
+        cards.add(3);
+        cards.add(29);
+        cards.add(10);
+        cards.add(15);
+        cards.add(28);
+        cards.add(12);
+        cards.add(17);
+        cards.add(4);
+        cards.add(8);
+        cards.add(23);
+        cards.add(19);
+        cards.add(27);
+        cards.add(20);
+        cards.add(6);
+        cards.add(26);
+        cards.add(30);
+        cards.add(16);
+*/
         for (int i = 3; i < numOfCards + 3; i++) cards.add(i);
         Collections.shuffle(cards);
     }
-    int[] playGame(){
+    public int[] playGame(int limit){
         strategies = new ArrayList<>();
-        strategies.add(new BasicStrategy(cards, numberOfRounds, 6));
-        strategies.add(new SequenceStrategy(cards, numberOfRounds));
-        strategies.add(new BasicStrategy(cards, numberOfRounds, 6));
+        strategies.add(new BasicStrategy(cards, numberOfRounds, 2));
+        strategies.add(new BasicStrategy(cards, numberOfRounds, 16));
+        strategies.add(new BasicStrategy(cards, numberOfRounds, 9));
         Random random = new Random();
         Player currentPlayer = players.get(random.nextInt(numOfPl));
 
@@ -74,9 +110,12 @@ class Game {
             vyberieme si tú možnosť kde je whatPlace menšie, t.j. ten prípad, kde sa umiestnime na lepšej(nižšej) pozícii
             následne hru patrične upravíme podľa toho ako sa hráč rozhodol
         */
+        //previousTurns is string which consists 0s and 1s in order which tells if card was taken or not
+        String previousTurns = "";
         while (round<numberOfRounds){
-            System.out.println(cards);
-            System.out.println("ROUND "+round+"\nCurrent card:"+ cards.get(round)+". "+ currentPlayer.getName()+", would you like to take it?(y/n). There is also "+ chips +" chips.");
+            //long startTime = System.nanoTime();
+            //System.out.println(cards);
+            //System.out.println("ROUND "+round+"\nCurrent card:"+ cards.get(round)+". "+ currentPlayer.getName()+", would you like to take it?(y/n). There is also "+ chips +" chips.");
             String answer;
             if (currentPlayer.getChips()==0){
                 System.out.println(currentPlayer.getName()+" has no chips, therefore they have to take the card.");
@@ -86,28 +125,33 @@ class Game {
             } else {
                 if (strategies.get(currentPlayer.getId()).decide(currentPlayer.getId(), round, players.get(0).getCards(),
                         players.get(1).getCards(), players.get(2).getCards(), players.get(0).getChips(),
-                        players.get(1).getChips(), players.get(2).getChips(), chips))
+                        players.get(1).getChips(), players.get(2).getChips(), chips, previousTurns))
                     answer = "y";
                 else
                     answer = "n";
             }
             while(true) {
                 if (answer.equals("y")) {
+                    previousTurns += "1";
                     currentPlayer.takeCard(cards.get(round), chips);
                     round++;
                     chips = 0;
                     break;
                 }
                 else if (answer.equals("n")) {
+                    previousTurns += "0";
                     currentPlayer.notTake();
                     currentPlayer = players.get((currentPlayer.getId()+1)%numOfPl);
                     chips++;
                     break;
                 }
-                System.out.println("Please, answer \'y\' or \'n\'");
+            //    System.out.println("Please, answer \'y\' or \'n\'");
                 answer = input.next();
             }
-            System.out.println(gameScore());
+            //System.out.println(gameScore());
+            //long endTime = System.nanoTime();
+            //long timeElapsed = endTime - startTime;
+            //System.out.println("turn lasted: " + timeElapsed / 1000000);
         }
         int[] finalScore = new int[3];
         finalScore[0] = players.get(0).getPoints();
